@@ -6,10 +6,10 @@ import com.homeprojects.commandlinecalculator.lexer.Token;
 import com.homeprojects.commandlinecalculator.lexer.TokenType;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.homeprojects.commandlinecalculator.lexer.Operator.isPriority;
-import static com.homeprojects.commandlinecalculator.lexer.TokenType.NUMBER;
-import static com.homeprojects.commandlinecalculator.lexer.TokenType.OPERATOR;
+import static com.homeprojects.commandlinecalculator.lexer.TokenType.*;
 
 public class Parser {
 
@@ -19,15 +19,21 @@ public class Parser {
 
     private int index;
 
+    private int numberOfOpenBrackets;
+
     public Parser(String expression) {
         this.expression = expression;
         this.index = 0;
+        this.numberOfOpenBrackets = 0;
     }
 
     public BinaryExpression parse() {
         tokens = new Lexer(expression).tokenize();
+        return parseInternal();
+    }
 
-        BinaryExpression left = getNumberExpression();
+    private BinaryExpression parseInternal() {
+        BinaryExpression left = getNumberOrBracketExpression();
         if (left == null) {
             throw new IllegalArgumentException("Expected number");
         }
@@ -35,17 +41,21 @@ public class Parser {
     }
 
     private BinaryExpression parse(BinaryExpression left) {
-        Token operatorToken = nextToken(OPERATOR);
-        if (operatorToken == null) {
+        Token token = nextToken();
+        if (token == null) {
             return left;
         }
-        BinaryExpression right = getNumberExpression();
+        if (token.type().equals(CLOSED_BRACKET)) {
+            numberOfOpenBrackets--;
+            return left;
+        }
 
-        Token nextOperatorToken = peekToken(OPERATOR);
-        if (!isPriority(operatorToken.value()) && nextOperatorToken != null && isPriority(nextOperatorToken.value())) {
+        BinaryExpression right = getNumberOrBracketExpression();
+        Token nextOperatorToken = peekToken(OPERATOR, CLOSED_BRACKET);
+        if (!isPriority(token.value()) && nextOperatorToken != null && Operator.isOperator(nextOperatorToken.value().charAt(0)) && isPriority(nextOperatorToken.value())) {
             right = parse(right);
         }
-        BinaryExpression operator = buildOperatorExpression(left, operatorToken, right);
+        BinaryExpression operator = buildOperatorExpression(left, token, right);
         return parse(operator);
     }
 
@@ -53,31 +63,45 @@ public class Parser {
         return new OperatorExpression(Operator.from(operatorToken.value()), left, right, operatorToken.startIndex(), operatorToken.endIndex());
     }
 
-    private BinaryExpression getNumberExpression() {
-        Token number = nextToken(NUMBER);
-        if (number == null) {
+    private BinaryExpression getNumberOrBracketExpression() {
+        Token token = nextToken();
+        if (token == null) {
             return null;
         }
-        return new NumberExpression(number.value(), number.startIndex(), number.endIndex());
+        if (token.type().equals(NUMBER)) {
+            return new NumberExpression(token.value(), token.startIndex(), token.endIndex());
+        }
+        if (token.type().equals(OPEN_BRACKET)) {
+            numberOfOpenBrackets++;
+            return parseInternal();
+        }
+        throw new IllegalArgumentException("Unexpected token at " + token.startIndex());
     }
 
     private Token nextToken(TokenType expectedType) {
-        if (index >= tokens.size()) {
+        Token token = nextToken();
+        if (token == null) {
             return null;
         }
-        Token token = tokens.get(index++);
         if (!token.type().equals(expectedType)) {
             throw new IllegalArgumentException("Invalid character");
         }
         return token;
     }
 
-    private Token peekToken(TokenType expectedType) {
+    private Token nextToken() {
+        if (index >= tokens.size()) {
+            return null;
+        }
+        return tokens.get(index++);
+    }
+
+    private Token peekToken(TokenType... expectedTypes) {
         if (index >= tokens.size()) {
             return null;
         }
         Token token = tokens.get(index);
-        if (!token.type().equals(expectedType)) {
+        if (!Set.of(expectedTypes).contains(token.type())) {
             throw new IllegalArgumentException("Invalid character at " + token.startIndex());
         }
         return token;

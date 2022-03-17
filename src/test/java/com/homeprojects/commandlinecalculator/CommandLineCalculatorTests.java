@@ -56,10 +56,17 @@ public class CommandLineCalculatorTests {
         assertThat(result).isEqualTo(5);
     }
 
+
     @Test
     public void multiOperatorAdditionSubtraction2() {
         int result = calculator.evaluate("12 - 5 + 2");
         assertThat(result).isEqualTo(9);
+    }
+
+    @Test
+    public void multiOperatorAdditionSubtraction3() {
+        int result = calculator.evaluate("12 - 5 + 2 - 3 + 4");
+        assertThat(result).isEqualTo(10);
     }
 
     @Test

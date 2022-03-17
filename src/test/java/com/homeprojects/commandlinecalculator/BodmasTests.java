@@ -50,4 +50,10 @@ public class BodmasTests {
         int result = calculator.evaluate("10 / 2 - 4");
         assertThat(result).isEqualTo(1);
     }
+
+    @Test
+    public void DivisionThenSubtraction2() {
+        int result = calculator.evaluate("10 / 2 - 4 * 2");
+        assertThat(result).isEqualTo(-3);
+    }
 }

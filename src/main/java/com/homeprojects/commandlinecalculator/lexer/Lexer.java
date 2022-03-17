@@ -42,7 +42,15 @@ public class Lexer {
         if (Operator.isOperator(expression.charAt(index))) {
             return getOperatorToken();
         }
-        return null;
+        if (expression.charAt(index) == '(') {
+            index++;
+            return new Token("(", TokenType.OPEN_BRACKET, index - 1, index - 1);
+        }
+        if (expression.charAt(index) == ')') {
+            index++;
+            return new Token(")", TokenType.CLOSED_BRACKET, index - 1, index - 1);
+        }
+        throw new IllegalArgumentException("Unexpected token at " + index);
     }
 
     private Token getOperatorToken() {
