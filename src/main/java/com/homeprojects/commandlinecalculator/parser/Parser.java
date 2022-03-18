@@ -29,7 +29,11 @@ public class Parser {
 
     public BinaryExpression parse() {
         tokens = new Lexer(expression).tokenize();
-        return parseInternal();
+        BinaryExpression binaryExpression = parseInternal();
+        if (numberOfOpenBrackets > 0) {
+            throw new IllegalArgumentException(numberOfOpenBrackets + " brackets are not closed");
+        }
+        return binaryExpression;
     }
 
     private BinaryExpression parseInternal() {
@@ -66,7 +70,7 @@ public class Parser {
     private BinaryExpression getNumberOrBracketExpression() {
         Token token = nextToken();
         if (token == null) {
-            return null;
+            throw new IllegalArgumentException("Expected a number or opening bracket at the end");
         }
         if (token.type().equals(NUMBER)) {
             return new NumberExpression(token.value(), token.startIndex(), token.endIndex());
@@ -75,7 +79,7 @@ public class Parser {
             numberOfOpenBrackets++;
             return parseInternal();
         }
-        throw new IllegalArgumentException("Unexpected token at " + token.startIndex());
+        throw new IllegalArgumentException("Unexpected token at " + token.startIndex() + ". Expected a number or opening bracket");
     }
 
     private Token nextToken(TokenType expectedType) {
